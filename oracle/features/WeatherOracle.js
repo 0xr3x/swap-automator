@@ -23,7 +23,7 @@ class WeatherOracle {
     
     // Hardcoded address of the deployed WeatherOracle contract on Avalanche testnet
     // This is the address we'll accept requests from
-    deployedAddress = '';
+    deployedAddress = '0xA100D7Bd101E67FcBaC6BCa9C140baF8aB8C24FD';
 
     constructor() {
         if (this.deployedAddress === '') {
@@ -68,15 +68,16 @@ class WeatherOracle {
             const zipcode = decoded[1]; // Extract zipcode
             
             console.log(`[WeatherOracle] Decoded requestId: ${requestId}, zipcode: ${zipcode}`);
+            console.log('this is new file')
             
             // Fetch real weather data from wttr.in
-            const response = await axios.get(`https://wttr.in/${zipcode}?format=j1`);
-            const weatherData = response.data;
+            //const response = await axios.get(`https://wttr.in/${zipcode}?format=j1`);
+            //const weatherData = response.data;
             
             // Extract current temperature, conditions and location info
-            const currentTemp = weatherData.current_condition[0].temp_F;
-            const currentConditions = weatherData.current_condition[0].weatherDesc[0].value;
-            const location = `${weatherData.nearest_area[0].areaName[0].value}, ${weatherData.nearest_area[0].region[0].value}, ${weatherData.nearest_area[0].country[0].value}`;
+            //const currentTemp = weatherData.current_condition[0].temp_F;
+            //const currentConditions = weatherData.current_condition[0].weatherDesc[0].value;
+            //const location = `${weatherData.nearest_area[0].areaName[0].value}, ${weatherData.nearest_area[0].region[0].value}, ${weatherData.nearest_area[0].country[0].value}`;
             
             // Encode the real weather data - MUST match contract's expected format
             // Format: (uint requestId, string temperature, string conditions, string location)
@@ -84,48 +85,49 @@ class WeatherOracle {
                 ['uint256', 'string', 'string', 'string'],
                 [
                     requestId,
-                    `${currentTemp}F`,
-                    currentConditions,
-                    location
+                    'test',//`${currentTemp}F`,
+                    'test',//currentConditions,
+                    'test'//location
                 ]
             );
             
             // Set the feature reply on the message
-            message.featureReply = featureReply;
-            
-            // CRITICAL: Ensure featureId is set on the message
-            // This is needed by the executor to properly build the process args
-            message.featureId = this.featureId;
-            
-            console.log(`[WeatherOracle] Static response encoded and ready to send for requestId: ${requestId}`);
-            console.log(`[WeatherOracle] Message properties set: featureId=${message.featureId}, has featureReply=${!!message.featureReply}`);
-            return message;
-        } catch (error) {
-            console.error(`[WeatherOracle] Error processing message:`, error);
-            // If we can't decode the message, we can't process it
-            // Just return the message without a featureReply
-            return message;
-        }
-    }
 
-    /**
-     * Validate a message from the blockchain
-     * This is called before process() to allow custom security checks
-     * 
-     * @param {object} driver - The blockchain driver handling the message
-     * @param {object} message - The message to validate
-     * @returns {boolean} Whether the message is valid for this feature
-     */
-    async isMessageValid(driver, message) {
-        // Check if the sender matches our hardcoded deployed address
-        if (message.sender && message.sender.toLowerCase() !== this.deployedAddress.toLowerCase()) {
-            console.log(`[WeatherOracle] Ignoring request from non-deployed contract: ${message.sender}`);
-            return false;
-        }
-        
-        console.log(`[WeatherOracle] Valid request from deployed contract: ${message.sender}`);
-        return true;
-    }
+message.featureReply = featureReply;
+            
+// CRITICAL: Ensure featureId is set on the message
+// This is needed by the executor to properly build the process args
+message.featureId = this.featureId;
+
+console.log(`[WeatherOracle] Static response encoded and ready to send for requestId: ${requestId}`);
+console.log(`[WeatherOracle] Message properties set: featureId=${message.featureId}, has featureReply=${!!message.featureReply}`);
+return message;
+} catch (error) {
+console.error(`[WeatherOracle] Error processing message:`, error);
+// If we can't decode the message, we can't process it
+// Just return the message without a featureReply
+return message;
+}
+}
+
+/**
+* Validate a message from the blockchain
+* This is called before process() to allow custom security checks
+* 
+* @param {object} driver - The blockchain driver handling the message
+* @param {object} message - The message to validate
+* @returns {boolean} Whether the message is valid for this feature
+*/
+async isMessageValid(driver, message) {
+// Check if the sender matches our hardcoded deployed address
+if (message.sender && message.sender.toLowerCase() !== this.deployedAddress.toLowerCase()) {
+console.log(`[WeatherOracle] Ignoring request from non-deployed contract: ${message.sender}`);
+return false;
+}
+
+console.log(`[WeatherOracle] Valid request from deployed contract: ${message.sender}`);
+return true;
+}
 }
 
 export default WeatherOracle;

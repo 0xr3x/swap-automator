@@ -24,7 +24,7 @@ const DEFAULT_NETWORK = 'avalanche-testnet';
 const POLL_INTERVAL = 10000; // 10 seconds
 const MAX_WAIT_TIME = 5 * 60 * 1000; // 5 minutes
 
-async function main() {
+async function requestWeather() {
   try {
     // Get zipcode from command line or use default
     const zipcode = process.argv[2] || '90210';
@@ -126,9 +126,23 @@ async function main() {
   }
 }
 
+async function main() {
+  const FREQUENCY = 3 * 60 * 1000; // 3 minutes in milliseconds
+  
+  while (true) {
+    try {
+      await requestWeather();
+      console.log('\nWaiting 3 minutes before next request...');
+      await new Promise(resolve => setTimeout(resolve, FREQUENCY));
+    } catch (error) {
+      console.error(error);
+      // run again immediately
+      console.log('Running again immediately...');
+      await requestWeather();
+      // Continue the loop even if there's an error
+      await new Promise(resolve => setTimeout(resolve, FREQUENCY));
+    }
+  }
+}
+
 main()
-  .then(() => process.exit(0))
-  .catch(error => {
-    console.error(error);
-    process.exit(1);
-  });
