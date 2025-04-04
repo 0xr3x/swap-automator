@@ -1,7 +1,7 @@
 /**
- * Weather Oracle Request Script
+ * Signal Oracle Request Script
  * 
- * Requests weather data from the WeatherOracle contract fully on-chain.
+ * Requests signal data from the tokenmetrics SignalOracle contract fully on-chain.
  */
 
 import { ethers } from 'ethers';
@@ -24,13 +24,10 @@ const DEFAULT_NETWORK = 'avalanche-testnet';
 const POLL_INTERVAL = 10000; // 10 seconds
 const MAX_WAIT_TIME = 5 * 60 * 1000; // 5 minutes
 
-async function requestWeather() {
+async function main() {
   try {
-    // Get zipcode from command line or use default
-    const zipcode = process.argv[2] || '90210';
-    const networkName = process.argv[3] || DEFAULT_NETWORK;
     
-    console.log(`=== Requesting weather data for zipcode ${zipcode} ===`);
+    console.log(`=== Requesting signal data ===`);
     
     // Setup provider and wallet
     const network = networks[networkName];
@@ -42,7 +39,7 @@ async function requestWeather() {
     const wallet = new ethers.Wallet(process.env.PRIVATE_KEY || '', provider);
     
     // Get deployment info
-    const deploymentPath = path.join(__dirname, '../deployments', network.name, 'WeatherOracle.json');
+    const deploymentPath = path.join(__dirname, '../deployments', network.name, 'SignalOracle.json');
     if (!fs.existsSync(deploymentPath)) {
       throw new Error(`Deployment not found. Please run deploy.js first.`);
     }
@@ -54,7 +51,7 @@ async function requestWeather() {
     console.log(`Your address: ${wallet.address}`);
     
     // Request weather data
-    console.log(`\nSending request for zipcode ${zipcode}...`);
+    console.log(`\nSending request ...`);
     const tx = await contract.requestWeather(zipcode);
     console.log(`Transaction hash: ${tx.hash}`);
     
@@ -108,13 +105,14 @@ async function requestWeather() {
     if (weatherData && weatherData.fulfilled) {
       console.log(`\n\n✅ Weather data received!`);
       console.log(`------------------------------------------`);
-      console.log(`Location: ${weatherData.location}`);
-      console.log(`Temperature: ${weatherData.temperature}`);
-      console.log(`Conditions: ${weatherData.conditions}`);
+      console.log(`Token Id: ${weatherData.location}`);
+      console.log(`Grade TA: ${weatherData.temperature}`);
+      console.log(`Singal Date: ${weatherData.conditions}`);
       console.log(`Timestamp: ${new Date(Number(weatherData.timestamp) * 1000).toLocaleString()}`);
       console.log(`------------------------------------------`);
     } else {
       console.log(`\n\n⏳ Request is still pending.`);
+
       console.log(`The off-chain node has not yet fulfilled this request.`);
       console.log(`You can check again later by running:`);
       console.log(`node scripts/request-weather.js ${zipcode} ${networkName}`);
@@ -126,23 +124,9 @@ async function requestWeather() {
   }
 }
 
-async function main() {
-  const FREQUENCY = 3 * 60 * 1000; // 3 minutes in milliseconds
-  
-  while (true) {
-    try {
-      await requestWeather();
-      console.log('\nWaiting 3 minutes before next request...');
-      await new Promise(resolve => setTimeout(resolve, FREQUENCY));
-    } catch (error) {
-      console.error(error);
-      // run again immediately
-      console.log('Running again immediately...');
-      await requestWeather();
-      // Continue the loop even if there's an error
-      await new Promise(resolve => setTimeout(resolve, FREQUENCY));
-    }
-  }
-}
-
 main()
+  .then(() => process.exit(0))
+  .catch(error => {
+    console.error(error);
+    process.exit(1);
+  });
