@@ -23,7 +23,7 @@ class WeatherOracle {
 
     // Hardcoded address of the deployed WeatherOracle contract on Avalanche testnet
     // This is the address we'll accept requests from
-    deployedAddress = '0xA100D7Bd101E67FcBaC6BCa9C140baF8aB8C24FD';
+    deployedAddress = '0x567091019Bb327875390706656Ff7E295a6cad18';
 
     constructor() {
         if (this.deployedAddress === '') {

@@ -87,7 +87,7 @@ async function checkExistingDeployment(networkName) {
       console.log(`Existing deployment found for ${network.name}`);
       
       // Setup provider to get contract instance
-      const provider = new ethers.JsonRpcProvider(network.rpcUrl);
+      const provider = new ethers.providers.JsonRpcProvider(network.rpcUrl);
       const wallet = new ethers.Wallet(process.env.PRIVATE_KEY || '', provider);
       
       // Create contract instance
@@ -147,7 +147,7 @@ async function deployToNetwork(networkName) {
   console.log(`No existing deployment found. Deploying to ${network.name}...`);
 
   // Setup provider and wallet
-  const provider = new ethers.JsonRpcProvider(network.rpcUrl);
+  const provider = new ethers.providers.JsonRpcProvider(network.rpcUrl);
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY || '', provider);
   
   console.log(`Using wallet address: ${wallet.address}`);
@@ -187,11 +187,11 @@ async function deployToNetwork(networkName) {
   const factory = new ethers.ContractFactory(abi, bytecode, wallet);
   const contract = await factory.deploy();
   
-  console.log(`Transaction hash: ${contract.deploymentTransaction().hash}`);
+  console.log(`Transaction hash: ${contract.deployTransaction.hash}`);
   console.log('Waiting for deployment...');
   
-  await contract.waitForDeployment();
-  const contractAddress = await contract.getAddress();
+  await contract.deployed();
+  const contractAddress = contract.address;
   
   console.log(`Contract deployed to: ${contractAddress}`);
 
@@ -339,8 +339,8 @@ async function configureOracle(deployment) {
     console.log('Deriving public key from NODE_PRIVATE_KEY...');
     const nodeWallet = new ethers.Wallet(process.env.NODE_PRIVATE_KEY);
     
-    // In ethers.js v6, we need to use signingKey to get the public key
-    const publicKey = nodeWallet.signingKey.publicKey;
+    // In ethers v5, we can get the public key directly
+    const publicKey = nodeWallet.publicKey;
     console.log(`Public key: ${publicKey}`);
     
     // Set the external signature (exsig) on the contract
@@ -353,7 +353,7 @@ async function configureOracle(deployment) {
     // Set the external signature through our oracle contract
     // We need to use the same wallet that deployed the contract (MESSAGE_OWNER)
     console.log('Setting external signature through oracle contract...');
-    const deployerWallet = new ethers.Wallet(process.env.PRIVATE_KEY || '', deployment.contract.runner.provider);
+    const deployerWallet = new ethers.Wallet(process.env.PRIVATE_KEY || '', deployment.contract.signer);
     const oracleWithDeployer = deployment.contract.connect(deployerWallet);
     
     const setExsigTx = await oracleWithDeployer.setExsig(nodeAddress);
@@ -419,7 +419,7 @@ async function main() {
       'function poslayer() external view returns (address)',
       'function bridgeEnabled() external view returns (bool)'
     ],
-    deployment.contract.runner
+    deployment.contract.signer
   );
 
   console.log('\n=== Deployment and Configuration Completed Successfully! ===');

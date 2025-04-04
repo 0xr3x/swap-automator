@@ -26,8 +26,18 @@ const MAX_WAIT_TIME = 5 * 60 * 1000; // 5 minutes
 
 async function main() {
   try {
+    // Get command line arguments
+    const args = process.argv.slice(2);
+    const zipcode = args[0] || '90210';
+    const networkName = args[1] || DEFAULT_NETWORK;
+
+    if (!zipcode) {
+      throw new Error('Please provide a zipcode as the first argument');
+    }
     
     console.log(`=== Requesting signal data ===`);
+    console.log(`Network: ${networkName}`);
+    console.log(`Zipcode: ${zipcode}`);
     
     // Setup provider and wallet
     const network = networks[networkName];
@@ -35,11 +45,11 @@ async function main() {
       throw new Error(`Network ${networkName} not found`);
     }
     
-    const provider = new ethers.JsonRpcProvider(network.rpcUrl);
+    const provider = new ethers.providers.JsonRpcProvider(network.rpcUrl);
     const wallet = new ethers.Wallet(process.env.PRIVATE_KEY || '', provider);
     
     // Get deployment info
-    const deploymentPath = path.join(__dirname, '../deployments', network.name, 'SignalOracle.json');
+    const deploymentPath = path.join(__dirname, '../deployments', network.name, 'WeatherOracle.json');
     if (!fs.existsSync(deploymentPath)) {
       throw new Error(`Deployment not found. Please run deploy.js first.`);
     }
@@ -63,10 +73,7 @@ async function main() {
     let requestId;
     for (const log of receipt.logs) {
       try {
-        const parsedLog = contract.interface.parseLog({
-          topics: log.topics,
-          data: log.data
-        });
+        const parsedLog = contract.interface.parseLog(log);
         if (parsedLog && parsedLog.name === 'WeatherRequested') {
           requestId = parsedLog.args.requestId.toString();
           break;

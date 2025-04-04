@@ -7,10 +7,10 @@ async function bootstrap() {
 
   // Set up Swagger
   const config = new DocumentBuilder()
-    .setTitle('My API')
-    .setDescription('The Cats API description')
+    .setTitle('SwAutomate')
+    .setDescription('SwAutomate API')
     .setVersion('1.0')
-    .addTag('cats')
+    .addTag('swap-automate')
     .build();
   
   const document = SwaggerModule.createDocument(app, config);
