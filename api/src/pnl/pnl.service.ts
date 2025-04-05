@@ -14,15 +14,20 @@ export class PnLService {
   private readonly FUJI_RPC = 'https://api.avax-test.network/ext/bc/C/rpc';
 
   constructor(private configService: ConfigService) {
+    const privateKey = this.configService.get<string>('PAYEE_PRIVATE_KEY');
+    if (!privateKey) {
+      throw new Error('PAYEE_PRIVATE_KEY is not configured');
+    }
+
     // Setup Request Network
     const cipherProvider = new EthereumPrivateKeyCipherProvider({
-      key: this.configService.get<string>('PAYEE_PRIVATE_KEY'),
+      key: privateKey,
       method: Types.Encryption.METHOD.ECIES,
     });
 
     const signatureProvider = new EthereumPrivateKeySignatureProvider({
       method: Types.Signature.METHOD.ECDSA,
-      privateKey: this.configService.get<string>('PAYEE_PRIVATE_KEY'),
+      privateKey: privateKey,
     });
 
     this.requestNetwork = new RequestNetwork({
