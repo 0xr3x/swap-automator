@@ -4,7 +4,7 @@ import { PnLController } from './pnl.controller';
 import { PnLService } from './pnl.service';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule.forRoot()],
   controllers: [PnLController],
   providers: [PnLService],
 })

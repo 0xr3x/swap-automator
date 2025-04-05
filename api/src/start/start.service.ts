@@ -5,12 +5,12 @@ import { WeatherService } from '../weather/weather.service';
 export class StartService {
   constructor(private readonly weatherService: WeatherService) {}
 
-  async start(): Promise<{ status: string; weatherData?: any }> {
+  async start(): Promise<{ status: string }> {
     try {
-      const weatherData = await this.weatherService.requestWeatherData();
+      // Just verify we can connect to the oracle service
+      await this.weatherService.requestTradingData();
       return {
-        status: 'started',
-        weatherData
+        status: 'started - monitoring trading conditions every 5 minutes',
       };
     } catch (error) {
       throw new Error(`Failed to start system: ${error.message}`);
