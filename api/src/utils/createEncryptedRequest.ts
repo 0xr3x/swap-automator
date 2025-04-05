@@ -1,149 +1,134 @@
-import { ethers } from 'ethers';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
-import { dirname } from 'path';
+import { EthereumPrivateKeyCipherProvider } from '@requestnetwork/epk-cipher';
+import { EthereumPrivateKeySignatureProvider } from '@requestnetwork/epk-signature';
+import {
+  RequestNetwork,
+  Types,
+  Utils,
+} from "@requestnetwork/request-client.js";
+import { config } from 'dotenv';
+import { Wallet } from "ethers";
 
-// Configure dotenv
-dotenv.config();
+config();
 
-// Get __dirname equivalent in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const cipherProvider = new EthereumPrivateKeyCipherProvider({
+  key: process.env.PAYEE_PRIVATE_KEY,
+  method: Types.Encryption.METHOD.ECIES,
+});
 
-// Constants
-const RPC_URL = 'https://api.avax-test.network/ext/bc/C/rpc';
-const POLL_INTERVAL = 10000; // 10 seconds
-const MAX_WAIT_TIME = 5 * 60 * 1000; // 5 minutes
+const signatureProvider = new EthereumPrivateKeySignatureProvider({
+  method: Types.Signature.METHOD.ECDSA,
+  privateKey: process.env.PAYEE_PRIVATE_KEY,
+});
 
-interface WeatherData {
-  location: string;
-  temperature: string;
-  conditions: string;
-  timestamp: string;
-  fulfilled: boolean;
+const requestNetwork = new RequestNetwork({
+  cipherProvider,
+  signatureProvider,
+  //useMockStorage: true,
+  nodeConnectionConfig: {
+    baseURL: "https://sepolia.gateway.request.network/",
+  },
+});
+
+// Add type for encryption public key
+interface EncryptionPublicKey {
+  key: string;
+  method: Types.Encryption.METHOD;
 }
 
-interface WeatherRequestResult {
-  requestId: string;
-  weatherData: WeatherData | null;
+// Add type for identity
+interface Identity {
+  type: Types.Identity.TYPE;
+  value: string;
 }
 
-export async function createEncryptedRequest(
-  zipcode: string,
-  privateKey: string,
-  contractAddress: string,
-  contractABI: any
-): Promise<WeatherRequestResult> {
-  try {
-    // Setup provider and wallet
-    const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
-    const wallet = new ethers.Wallet(privateKey, provider);
-    
-    // Create contract instance
-    const contract = new ethers.Contract(contractAddress, contractABI, wallet);
-    
-    // Request weather data
-    const tx = await contract.requestWeather(zipcode);
-    
-    // Wait for confirmation
-    const receipt = await tx.wait();
-    
-    // Get request ID from event
-    let requestId: string | undefined;
-    for (const log of receipt.logs) {
-      try {
-        const parsedLog = contract.interface.parseLog(log);
-        if (parsedLog && parsedLog.name === 'WeatherRequested') {
-          requestId = parsedLog.args.requestId.toString();
-          break;
-        }
-      } catch (e) {
-        // Skip logs that can't be parsed
-      }
-    }
-    
-    if (!requestId) {
-      throw new Error('Could not find request ID in transaction logs');
-    }
-    
-    // Poll for results
-    const startTime = Date.now();
-    let weatherData: WeatherData | null = null;
-    
-    while (Date.now() - startTime < MAX_WAIT_TIME) {
-      // Check if request is fulfilled
-      const isFulfilled = await contract.isRequestFulfilled(requestId);
-      
-      if (isFulfilled) {
-        weatherData = await contract.getWeatherData(requestId);
-        break;
-      }
-      
-      // Wait before polling again
-      await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
-    }
-    
-    return {
-      requestId,
-      weatherData
+// Add type for request parameters
+interface RequestCreateParameters {
+  requestInfo: {
+    currency: {
+      type: Types.RequestLogic.CURRENCY;
+      value: string;
+      network: string;
     };
-    
-  } catch (error) {
-    throw new Error(`Weather request failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
+    expectedAmount: string;
+    payee: Identity;
+    payer: Identity;
+    timestamp: number;
+  };
+  paymentNetwork: {
+    id: Types.Extension.PAYMENT_NETWORK_ID;
+    parameters: {
+      paymentNetworkName: string;
+      paymentAddress: string;
+      feeAddress: string;
+      feeAmount: string;
+    };
+  };
+  contentData: {
+    reason: string;
+    dueDate: string;
+  };
+  signer: Identity;
 }
 
-// Example usage in main function
-async function main(): Promise<void> {
-  try {
-    const args = process.argv.slice(2);
-    const zipcode: string = args[0];
+const publickKey: string = new Wallet(process.env.PAYEE_PRIVATE_KEY!).publicKey;
 
-    if (!zipcode) {
-      throw new Error('Please provide a zipcode as the first argument');
-    }
-    
-    // Get deployment info
-    const deploymentPath = path.join(__dirname, '../deployments', 'avalanche-testnet', 'SignalOracle.json');
-    if (!fs.existsSync(deploymentPath)) {
-      throw new Error(`Deployment not found. Please run deploy.js first.`);
-    }
-    
-    const deployment = JSON.parse(fs.readFileSync(deploymentPath, 'utf8'));
-    
-    const result = await createEncryptedRequest(
-      zipcode,
-      process.env.PRIVATE_KEY || '',
-      deployment.address,
-      deployment.abi
-    );
-    
-    if (result.weatherData && result.weatherData.fulfilled) {
-      console.log(`\n\n✅ Weather data received!`);
-      console.log(`------------------------------------------`);
-      console.log(`Token Id: ${result.weatherData.location}`);
-      console.log(`Grade TA: ${result.weatherData.temperature}`);
-      console.log(`Singal Date: ${result.weatherData.conditions}`);
-      console.log(`Timestamp: ${new Date(Number(result.weatherData.timestamp) * 1000).toLocaleString()}`);
-      console.log(`------------------------------------------`);
-    } else {
-      console.log(`\n\n⏳ Request is still pending.`);
-      console.log(`The off-chain node has not yet fulfilled this request.`);
-      console.log(`You can check again later by running:`);
-      console.log(`node scripts/request-weather.js ${zipcode}`);
-    }
-    
-  } catch (error) {
-    console.error(`\nError: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
-  }
+console.log('Public key:', publickKey);
+const payeeEncryptionPublicKey: EncryptionPublicKey = {
+  key: new Wallet(process.env.PAYEE_PRIVATE_KEY!).publicKey,
+  method: Types.Encryption.METHOD.ECIES,
+};
+const payerEncryptionPublicKey: EncryptionPublicKey = {
+  key: new Wallet(process.env.PAYER_PRIVATE_KEY!).publicKey,
+  method: Types.Encryption.METHOD.ECIES,
+};
+
+const payeeIdentity: Identity = {
+  type: Types.Identity.TYPE.ETHEREUM_ADDRESS,
+  value: new Wallet(process.env.PAYEE_PRIVATE_KEY!).address,
+};
+
+//const payeeIdentity = new Wallet(process.env.PAYEE_PRIVATE_KEY).address;
+const payerIdentity = payeeIdentity;
+const paymentRecipient = payeeIdentity;
+const feeRecipient = "0x0000000000000000000000000000000000000000";
+
+// Create request parameters
+const requestCreateParameters: RequestCreateParameters = {
+  requestInfo: {
+    currency: {
+      type: Types.RequestLogic.CURRENCY.ERC20,
+      value: '0x370DE27fdb7D1Ff1e1BaA7D11c5820a324Cf623C',
+      network: 'sepolia',
+    },
+    expectedAmount: '1000000000000000000',
+    payee: payeeIdentity,
+    payer: payerIdentity,
+    timestamp: Utils.getCurrentTimestampInSecond(),
+  },
+  paymentNetwork: {
+    id: Types.Extension.PAYMENT_NETWORK_ID.ERC20_FEE_PROXY_CONTRACT,
+    parameters: {
+      paymentNetworkName: 'sepolia',
+      paymentAddress: payeeIdentity.value,
+      feeAddress: '0x0000000000000000000000000000000000000000',
+      feeAmount: '0',
+    },
+  },
+  contentData: {
+    reason: '🍕',
+    dueDate: '2023.06.16',
+  },
+  signer: payeeIdentity,
+};
+
+async function main() {
+  const invoice = await requestNetwork._createEncryptedRequest(
+    requestCreateParameters,
+    [payeeEncryptionPublicKey, payerEncryptionPublicKey],
+  );
+
+  const requestData = await invoice.waitForConfirmation();
+  console.log(JSON.stringify(requestData));
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch(error => {
-    console.error(error);
-    process.exit(1);
-  });
+main().catch(console.error);

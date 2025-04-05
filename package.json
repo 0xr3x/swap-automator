@@ -35,12 +35,13 @@
     "@vialabs-io/npm-contracts": "github:VIALabs-io/npm-contracts",
     "@vialabs-io/npm-registry": "github:VIALabs-io/npm-registry",
     "axios": "^1.8.4",
-    "dotenv": "^16.3.1",
-    "ethers": "^5.7.2",
     "solc": "0.8.17"
   },
   "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@types/node": "^22.14.0",
+    "dotenv": "^16.4.7",
+    "ethers": "^5.7.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
   }
