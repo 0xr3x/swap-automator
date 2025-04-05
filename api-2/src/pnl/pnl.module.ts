@@ -4,4 +4,4 @@ import { PnLController } from './pnl.controller';
 @Module({
   controllers: [PnLController],
 })
-export class StartModule {} 
+export class PnlModule {} 
