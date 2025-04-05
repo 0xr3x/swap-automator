@@ -125,3 +125,7 @@ You can customize the oracle by modifying:
 - The `WeatherOracle.sol` contract to store additional data or add new functionality
 - The `oracle/features/WeatherOracle.js` file to fetch different types of data or use a different API
 - The frontend components to display the data in a different way
+
+
+
+https://testnet.avascan.info/blockchain/c/address/0x8e066c05BE1864BbA228165BDb6CDce17cbE0eba/transactions

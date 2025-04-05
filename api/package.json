@@ -1,6 +1,5 @@
 {
-  "type": "module",
-  "name": "api",
+  "name": "api-2",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -25,14 +24,6 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^11.1.1",
-    "@requestnetwork/epk-cipher": "^0.10.0",
-    "@requestnetwork/epk-signature": "^0.10.0",
-    "@requestnetwork/lit-protocol-cipher": "^0.10.0",
-    "@requestnetwork/payment-processor": "^0.57.0",
-    "@requestnetwork/request-client.js": "^0.59.0",
-    "@requestnetwork/web3-signature": "^0.9.0",
-    "dotenv": "^16.4.7",
-    "ethers": "^5.7.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1"
