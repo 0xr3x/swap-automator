@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { PnlController } from './pnl.controller';
+import { PnLController } from './pnl.controller';
 
 @Module({
-  controllers: [PnlController],
+  controllers: [PnLController],
 })
-export class PnlModule {} 
+export class StartModule {} 

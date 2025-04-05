@@ -1,9 +1,9 @@
 import { Controller, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-@ApiTags('PnL')
-@Controller('PnL')
-export class PnLController {
+@ApiTags('Start')
+@Controller('start')
+export class StartController {
   @Post()
   @ApiOperation({ summary: 'Start the system' })
   @ApiResponse({ 
@@ -14,7 +14,7 @@ export class PnLController {
       example: 'started'
     }
   })
-  getPnl(): string {
+  start(): string {
     return 'started';
   }
 } 
