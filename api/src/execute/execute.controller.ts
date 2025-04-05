@@ -8,13 +8,13 @@ export class ExecuteController {
   @ApiOperation({ summary: 'Execute a transaction' })
   @ApiResponse({ 
     status: 200, 
-    description: 'Transaction executed successfully',
+    description: 'Please use /start, /stop, or /pnl commands instead. This endpoint is not yet deployed.',
     schema: {
       type: 'string',
-      example: 'executed'
+      example: 'Please use /start, /stop, or /pnl commands instead. This endpoint is not yet deployed.'
     }
   })
   execute(): string {
-    return 'executed';
+    return 'Please use /start, /stop, or /pnl commands instead. This endpoint is not yet deployed.';
   }
 } 

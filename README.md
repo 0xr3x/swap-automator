@@ -1,131 +1,131 @@
-# Weather Oracle Example
+# SwAutomator Trading Bot
 
-This project demonstrates how to create and deploy a weather oracle using VIA's messaging protocol. The oracle allows smart contracts to request weather data for a zipcode, which is fetched by an off-chain node and returned to the contract.
+A Telegram-based automated trading bot that combines real-time trading signals with encrypted receipt storage for tax compliance.
 
-## Prerequisites
+## Overview
 
-Before you begin, make sure you have:
+SwAutomator enables secure, automated trading through Telegram with privacy-preserving trade documentation. It leverages multiple protocols to create a comprehensive trading solution:
 
-- Node.js (v20+) and npm
-- Git
-- A private key with testnet funds for deployment
-- Testnet tokens for [Avalanche Testnet](https://faucet.avax.network/)
+- **TokenMetrics**: Real-time trading signals and analysis
+- **VIA Labs**: Secure oracle implementation for signal verification
+- **Request Network**: Encrypted storage of trade receipts
+- **AgentKit/ElizaOS**: Bot orchestration and automation
+- **UniChain**: DEX integration for trade execution
 
 ## Project Structure
 
 ```
-quickstart-oracle/
+swautomator/
+├── api/                    # TokenMetrics API integration
+├── api-basic/             # Basic API implementation for Eliza bot
 ├── contracts/
-│   └── WeatherOracle.sol    # The oracle contract with request/response functionality
+│   ├── WeatherOracle.sol  # VIA Labs oracle for signal verification
+│   └── RequestStorage.sol # Storage contract for request tracking
+├── deployments/           # Contract deployment configurations
+├── oracle/               # Oracle node implementation
 ├── scripts/
-│   ├── deploy.js            # Deploy script using ethers v6
-│   └── request-weather.js   # Script to request weather data
-├── oracle/
-│   ├── index.js             # VIA Project Node implementation
-│   └── features/
-│       ├── index.js         # Features registry
-│       └── WeatherOracle.js # Weather oracle feature implementation
-├── frontend/                # React frontend for interacting with the oracle
-├── network.config.js        # Network configuration
-├── package.json             # Project dependencies
-├── .env.example             # Example environment variables
-└── README.md                # Project documentation
+│   ├── deploy.js         # Main contract deployment
+│   ├── deploy-storage.js # Storage contract deployment
+│   ├── createencryptedrequest.js  # Request Network integration
+│   └── retrieveencryptedrequest.js # Encrypted data retrieval
+└── README.md
 ```
 
-## Step 1: Clone & Setup
+## Prerequisites
 
+- Node.js (v20+) and pnpm
+- Telegram Bot Token
+- TokenMetrics API Access
+- Private keys for contract deployment
+- Request Network credentials
+
+## Setup
+
+1. Clone the repository:
 ```bash
-# Clone the repository
-git clone https://github.com/VIALabs-io/quickstart-oracle.git && cd quickstart-oracle
+git clone https://github.com/armsves/EthBucharest2025TradingAgentBot.git
+cd EthBucharest2025TradingAgentBot
+```
 
-# Install dependencies
-npm install
+2. Install main dependencies:
+```bash
+pnpm install
+```
 
-# Create a .env file with your private keys
+3. Install API dependencies:
+```bash
+cd api
+pnpm install
+cd ../api-basic
+pnpm install
+cd ..
+```
+
+4. Configure environment variables:
+```bash
 cp .env.example .env
 ```
 
-Edit the `.env` file and add:
-- Your private key for deploying contracts (PRIVATE_KEY)
-- Your node private key for running the oracle node (NODE_PRIVATE_KEY)
-- Optionally, your OpenWeatherMap API key (WEATHER_API_KEY)
+Edit `.env` with your credentials:
+- TELEGRAM_BOT_TOKEN
+- TOKENMETRICS_API_KEY
+- PRIVATE_KEY
+- REQUEST_NETWORK_CREDENTIALS
 
-## Step 2: Deploy Your Oracle Contract
+## Deployment
 
+1. Deploy the main contracts:
 ```bash
-node scripts/deploy.js
+pnpm run deploy
 ```
 
-This script will:
-1. Compile the WeatherOracle.sol contract
-2. Deploy the contract to Avalanche Testnet
-3. Configure the oracle for on-chain to off-chain communication
-4. Save deployment information for the frontend
-
-## Step 3: Run the Oracle Node
-
+2. Deploy the storage contract:
 ```bash
-node oracle/index.js
+pnpm run deploy-storage
 ```
 
-## Step 4: Request Weather Data
-
+3. Start the oracle node:
 ```bash
-node scripts/request-weather.js 90210
+pnpm run oracle
 ```
 
-This command requests weather data for the zipcode 90210 (Beverly Hills). The script will:
-1. Send a transaction to the WeatherOracle contract
-2. Wait for the transaction to be confirmed
-3. Poll for the weather data to be received
-4. Display the weather data when it's available
+## Features
 
-## Step 5: Use the Frontend
+### Trading Automation
+- Real-time signal processing from TokenMetrics
+- Automated trade execution based on configured strategies
+- Risk management and position sizing
 
-```bash
-# Start the frontend
-cd frontend
-npm install
-npm run dev
-```
+### Privacy & Compliance
+- Encrypted trade receipt storage via Request Network
+- On-chain verification of trading signals
+- Tax-compliant documentation
 
-## How It Works
+### Telegram Integration
+- User-friendly command interface
+- Real-time trade notifications
+- Strategy customization options
 
-### On-Chain Contract
+## Development Roadmap
 
-The `WeatherOracle` contract:
-- Allows users to request weather data for a zipcode
-- Generates a unique request ID for each request
-- Sends a message to the off-chain node
-- Processes incoming messages containing weather data
-- Stores the weather data on-chain
-- Provides functions to retrieve weather data by request ID
+| Phase | Target Date | Features |
+|-------|-------------|----------|
+| MVP | 2025-04-05 | Basic trading bot with signal integration |
+| Alpha | 2025-05-01 | Strategy customization, dashboard |
+| Beta | 2025-06-01 | Advanced analytics, receipt export |
+| V1 | 2025-07-15 | Multi-bot support, tax tooling integration |
 
-### Off-Chain Node
+## Contributing
 
-The off-chain node:
-- Listens for weather data requests from the contract
-- Extracts the zipcode from the request
-- Fetches weather data from the OpenWeatherMap API (or uses static data)
-- Sends the weather data back to the contract
+Please read our contributing guidelines before submitting pull requests.
 
-### On-Chain to Off-Chain Communication Flow
+## Contact
 
-1. A user calls `requestWeather(zipcode)` on the WeatherOracle contract
-2. The contract generates a unique request ID and emits a WeatherRequested event
-3. The contract sends a message to the off-chain node using feature ID 1
-4. The node receives the message, fetches the weather data, and sends it back
-5. The contract receives the data, stores it, and emits a WeatherReceived event
-6. The user can retrieve the weather data using the request ID
-
-## Customizing the Oracle
-
-You can customize the oracle by modifying:
-
-- The `WeatherOracle.sol` contract to store additional data or add new functionality
-- The `oracle/features/WeatherOracle.js` file to fetch different types of data or use a different API
-- The frontend components to display the data in a different way
+- Telegram: @Beerus_2020 & @oxr3x
 
 
+## License
+
+This project is proprietary software. All rights reserved.
 
 https://testnet.avascan.info/blockchain/c/address/0x8e066c05BE1864BbA228165BDb6CDce17cbE0eba/transactions

@@ -17,21 +17,31 @@ export class StartController {
       properties: {
         status: {
           type: 'string',
-          example: 'started'
+          example: 'started - monitoring trading conditions every 5 minutes'
         },
-        weatherData: {
-          type: 'object',
-          properties: {
-            tokenId: { type: 'string' },
-            gradeTA: { type: 'string' },
-            signalDate: { type: 'string' },
-            timestamp: { type: 'string' }
-          }
+        tradeDetails: {
+          type: 'string',
+          example: 'No trade needed at this time - doing alright!'
+        },
+        transactionHash: {
+          type: 'string',
+          example: '0x123...abc',
+          nullable: true
+        },
+        requestId: {
+          type: 'string',
+          example: '0x456...def',
+          nullable: true
         }
       }
     }
   })
-  async start(): Promise<{ status: string; weatherData?: any }> {
+  async start(): Promise<{ 
+    status: string;
+    tradeDetails: string;
+    transactionHash?: string;
+    requestId?: string;
+  }> {
     return this.startService.start();
   }
 } 

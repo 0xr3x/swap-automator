@@ -1,30 +1,70 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { ethers } from 'ethers';
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
+import { TradeStorageService } from '../trade-storage/trade-storage.service';
+
+interface TradeResult {
+  shouldTrade: boolean;
+  position?: string;
+  amount?: string;
+  price?: string;
+  txHash?: string;
+  requestId?: string;
+}
 
 @Injectable()
 export class WeatherService {
-  private readonly logger = new Logger(WeatherService.name);
-  private readonly DEFAULT_NETWORK = 'avalanche-testnet';
-  private readonly POLL_INTERVAL = 10000; // 10 seconds
-  private readonly MAX_WAIT_TIME = 5 * 60 * 1000; // 5 minutes
-  private readonly NETWORK = {
-    name: 'avalanche-testnet',
-    rpcUrl: 'https://api.avax-test.network/ext/bc/C/rpc',
-  };
+  constructor(
+    private readonly tradeStorageService: TradeStorageService,
+    private readonly schedulerRegistry: SchedulerRegistry,
+  ) {
+    this.logger = new Logger(WeatherService.name);
+    this.DEFAULT_NETWORK = 'avalanche-testnet';
+    this.POLL_INTERVAL = 10000; // 10 seconds
+    this.MAX_WAIT_TIME = 5 * 60 * 1000; // 5 minutes
+    this.NETWORK = {
+      name: 'avalanche-testnet',
+      rpcUrl: 'https://api.avax-test.network/ext/bc/C/rpc',
+    };
 
-  private readonly LIFI_API_URL = 'https://li.quest/v1/quote';
-  private readonly WETH_ADDRESS = '0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB'; // Avalanche testnet WETH
-  private readonly USDC_ADDRESS = '0x5425890298aed601595a70AB815c96711a31Bc65'; // Avalanche testnet USDC
+    this.LIFI_API_URL = 'https://li.quest/v1/quote';
+    this.WETH_ADDRESS = '0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB'; // Avalanche testnet WETH
+    this.USDC_ADDRESS = '0x5425890298aed601595a70AB815c96711a31Bc65'; // Avalanche testnet USDC
 
-  private lastTradeTimestamp: number = 0;
-  private readonly TRADE_COOLDOWN = 5 * 60 * 1000; // 5 minutes in milliseconds
+    this.lastTradeTimestamp = 0;
+    this.TRADE_COOLDOWN = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+    this.isScheduleActive = false;
+    this.cronJob = null;
+  }
+
+  private readonly logger: Logger;
+  private readonly DEFAULT_NETWORK: string;
+  private readonly POLL_INTERVAL: number;
+  private readonly MAX_WAIT_TIME: number;
+  private readonly NETWORK: { name: string; rpcUrl: string };
+
+  private readonly LIFI_API_URL: string;
+  private readonly WETH_ADDRESS: string;
+  private readonly USDC_ADDRESS: string;
+
+  private lastTradeTimestamp: number;
+  private readonly TRADE_COOLDOWN: number;
+
+  private isScheduleActive: boolean = false;
+  private cronJob: any;
+
+  @Cron(CronExpression.EVERY_5_MINUTES, {
+    name: 'trading-conditions-check'
+  })
   async checkTradingConditions() {
+    if (!this.isScheduleActive) {
+      return;
+    }
+
     try {
       // Check if enough time has passed since last trade
       if (Date.now() - this.lastTradeTimestamp < this.TRADE_COOLDOWN) {
@@ -36,7 +76,7 @@ export class WeatherService {
       
       if (Number(tradingData.signal) > 500) {
         this.logger.log('Trading signal threshold exceeded, executing buy trade...');
-        await this.executeTrade();
+        await this.executeTrade(tradingData);
         this.lastTradeTimestamp = Date.now();
       } else {
         this.logger.log('Trading signal below threshold, no trade needed');
@@ -107,7 +147,7 @@ export class WeatherService {
     };
   }
 
-  private async executeTrade(): Promise<void> {
+  private async executeTrade(tradingData: any): Promise<void> {
     const provider = new ethers.providers.JsonRpcProvider(this.NETWORK.rpcUrl);
     const wallet = new ethers.Wallet(process.env.PRIVATE_KEY || '', provider);
 
@@ -123,7 +163,7 @@ export class WeatherService {
 
     // Prepare LIFI quote request
     const quoteRequest = {
-      fromChain: 43113, // Avalanche testnet
+      fromChain: 43113,
       fromToken: this.USDC_ADDRESS,
       fromAddress: wallet.address,
       fromAmount: tradeAmount.toString(),
@@ -146,10 +186,39 @@ export class WeatherService {
         gasLimit: transaction.gasLimit,
       });
 
-      await tx.wait();
+      const receipt = await tx.wait();
+
+      // Store the trade details
+      await this.tradeStorageService.storeTrade({
+        amount: tradeAmount.toString(),
+        tokenAddress: this.USDC_ADDRESS,
+        timestamp: Date.now(),
+        signal: Number(tradingData.signal),
+        conditions: tradingData.conditions,
+      });
+
+      this.logger.log(`Trade executed and stored successfully`);
     } catch (error) {
       console.error('Trade execution failed:', error);
       throw new Error(`Failed to execute trade: ${error.message}`);
     }
+  }
+
+  async startTradingSchedule(): Promise<TradeResult> {
+    this.isScheduleActive = true;
+    this.logger.log('Trading schedule started');
+    return {
+      shouldTrade: false,
+      position: 'LONG',
+      amount: '1000',
+      price: '1.234',
+      txHash: '0x123...abc',
+      requestId: '0x456...def'
+    };
+  }
+
+  async stopTradingSchedule(): Promise<void> {
+    this.isScheduleActive = false;
+    this.logger.log('Trading schedule stopped');
   }
 } 
